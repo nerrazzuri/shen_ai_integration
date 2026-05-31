@@ -23,7 +23,11 @@ class ShenAiHealthScanNode(Node):
         cfg = self._load_config()
         engine = ShenAiEngine(cfg)
         camera = RosCamera(self, cfg.camera_topic)
-        robot_io = RosIO(self)
+        robot_io = RosIO(
+            self,
+            static_video_dir=cfg.screen_static_video_dir,
+            result_video_dir=cfg.screen_result_video_dir,
+        )
         triggers = [_TRIGGER_FACTORIES[t](self, cfg)
                     for t in cfg.enabled_triggers if t in _TRIGGER_FACTORIES]
         self.app = ScanApp(cfg, camera=camera, engine=engine, robot_io=robot_io,
@@ -41,6 +45,8 @@ class ShenAiHealthScanNode(Node):
             ("enabled_triggers", ["service"]),
             ("acquire_face_timeout", 20.0), ("max_measure_seconds", 75.0),
             ("min_signal_quality", 0.0),
+            ("screen_static_video_dir", ""),
+            ("screen_result_video_dir", ""),
             ("publisher.endpoint", ""), ("publisher.auth_header", ""),
             ("publisher.timeout_sec", 5.0), ("publisher.max_retries", 3),
             ("publisher.dead_letter_path", "dead_letter"),
@@ -55,6 +61,8 @@ class ShenAiHealthScanNode(Node):
             "acquire_face_timeout": g("acquire_face_timeout"),
             "max_measure_seconds": g("max_measure_seconds"),
             "min_signal_quality": g("min_signal_quality"),
+            "screen_static_video_dir": g("screen_static_video_dir"),
+            "screen_result_video_dir": g("screen_result_video_dir"),
             "publisher": {
                 "endpoint": g("publisher.endpoint") or None,
                 "auth_header": g("publisher.auth_header") or None,

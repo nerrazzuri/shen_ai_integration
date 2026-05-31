@@ -7,9 +7,12 @@ from shenai_health_scan.triggers.manual_trigger import ManualTrigger
 from shenai_health_scan.core.types import ScanState
 
 class FastCam:
+    def __init__(self): self._ts = 0
     def start(self): pass
     def stop(self): pass
-    def get_latest(self): return (b"\x00", 1, 1, 3, 1)
+    def get_latest(self):
+        self._ts += 1
+        return (b"\x00", 1, 1, 3, self._ts)
     @property
     def measured_fps(self): return 30.0
 
@@ -25,3 +28,23 @@ def test_scanapp_end_to_end_mock():
         time.sleep(0.01)
     app.stop()
     assert app.orch.state == ScanState.DONE
+
+
+def test_scanapp_stop_closes_engine():
+    class ClosingEngine(MockEngine):
+        def __init__(self):
+            super().__init__()
+            self.closed = False
+
+        def close(self):
+            self.closed = True
+
+    cfg = ScanConfig.from_dict({"submit_fps": 1000})
+    engine = ClosingEngine()
+    app = ScanApp(cfg, camera=FastCam(), engine=engine,
+                  robot_io=ConsoleIO(), triggers=[])
+
+    app.start()
+    app.stop()
+
+    assert engine.closed is True

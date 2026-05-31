@@ -34,6 +34,8 @@ class ScanConfig:
     acquire_face_timeout: float = 20.0
     max_measure_seconds: float = 75.0
     min_signal_quality: float = 0.0
+    screen_static_video_dir: Optional[str] = None
+    screen_result_video_dir: Optional[str] = None
     publisher: PublisherConfig = field(default_factory=PublisherConfig)
 
     @classmethod
@@ -50,5 +52,7 @@ class ScanConfig:
             acquire_face_timeout=float(d.get("acquire_face_timeout", 20.0)),
             max_measure_seconds=float(d.get("max_measure_seconds", 75.0)),
             min_signal_quality=float(d.get("min_signal_quality", 0.0)),
+            screen_static_video_dir=d.get("screen_static_video_dir") or None,
+            screen_result_video_dir=d.get("screen_result_video_dir") or None,
             publisher=PublisherConfig.from_dict(d.get("publisher", {})),
         )

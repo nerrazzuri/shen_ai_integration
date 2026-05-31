@@ -17,6 +17,7 @@ class FaceHint(str, Enum):
     NONE = "none"
     NO_FACE = "no_face"
     TOO_FAR = "too_far"
+    TOO_CLOSE = "too_close"
     OFF_CENTER = "off_center"
     HOLD_STILL = "hold_still"
     READY = "ready"

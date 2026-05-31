@@ -1,12 +1,15 @@
 # robot_io/ros_io.py
 from __future__ import annotations
-import os, time, uuid
+import os
 from typing import Dict, Any, Optional
-from .cards import render_result_card
+from .video_presenter import VideoScreenPresenter
+from .videos import VideoAssetManager
 
 class RosIO:
     """Robot output via PlayTts + PlayVideo services. Best-effort, non-blocking-ish."""
-    def __init__(self, node, card_dir: Optional[str] = None):
+    def __init__(self, node, card_dir: Optional[str] = None,
+                 static_video_dir: Optional[str] = None,
+                 result_video_dir: Optional[str] = None):
         from aimdk_msgs.srv import PlayTts, PlayVideo
         self._node = node
         self._card_dir = card_dir or os.path.join(os.path.expanduser("~"), "shenai_cards")
@@ -15,6 +18,20 @@ class RosIO:
         self._video = node.create_client(PlayVideo, "/face_ui_proxy/play_video")
         self._PlayTts = PlayTts
         self._PlayVideo = PlayVideo
+        video_dir = static_video_dir or os.path.join(self._card_dir, "videos")
+        result_dir = result_video_dir or os.path.join(self._card_dir, "videos")
+        self._video_assets = VideoAssetManager(
+            video_dir, generate_missing_static=static_video_dir is None,
+            result_root=result_dir)
+        if static_video_dir is None:
+            try:
+                self._video_assets.ensure_static_videos()
+            except Exception as e:
+                self._node.get_logger().warn(f"Video asset generation failed: {e}")
+        self._video_presenter = VideoScreenPresenter(
+            self._video_assets,
+            lambda path, loop: self._play_video(path, mode=2 if loop else 1, priority=5),
+        )
 
     def speak(self, text: str, priority: int = 6) -> None:
         try:
@@ -32,14 +49,7 @@ class RosIO:
 
     def show(self, view: str, data: Dict[str, Any]) -> None:
         try:
-            if view == "result_card" and "vitals" in data:
-                png = render_result_card(data["vitals"])
-                path = os.path.join(self._card_dir, f"card_{int(time.time()*1000)}_{uuid.uuid4().hex[:6]}.png")
-                with open(path, "wb") as f:
-                    f.write(png)
-                self._play_video(path, mode=1, priority=5)
-            # Other views (coaching/measuring/idle/error) can map to preset media
-            # files configured on the robot; left as best-effort no-ops for MVP.
+            self._video_presenter.show(view, data)
         except Exception as e:
             self._node.get_logger().warn(f"show({view}) failed: {e}")
 

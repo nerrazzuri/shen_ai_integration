@@ -11,6 +11,7 @@ Effect = object  # union of Speak/ShowScreen/EngineCmd/PublishResults
 _HINT_SPEECH = {
     FaceHint.NO_FACE: "Please stand in front of me and look at my eyes.",
     FaceHint.TOO_FAR: "Come a little closer, please.",
+    FaceHint.TOO_CLOSE: "You are too close. Please move back a little.",
     FaceHint.OFF_CENTER: "Center your face, please.",
     FaceHint.HOLD_STILL: "Hold still, please.",
     FaceHint.READY: "Good, stay there.",
@@ -28,6 +29,7 @@ class ScanOrchestrator:
         self._scan_requested = False
         self._state_entered_at = 0.0
         self._last_hint: Optional[FaceHint] = None
+        self._last_hold_prompt_at: Optional[float] = None
 
     def request_scan(self) -> None:
         with self._lock:
@@ -44,6 +46,7 @@ class ScanOrchestrator:
         self.state = state
         self._state_entered_at = now
         self._last_hint = None
+        self._last_hold_prompt_at = now if state == ScanState.MEASURING else None
 
     def on_tick(self, poll: EnginePoll, now: float) -> List[Effect]:
         if self.state in (ScanState.IDLE, ScanState.DONE, ScanState.FAILED):
@@ -75,7 +78,9 @@ class ScanOrchestrator:
                     return [EngineCmd("stop"), ShowScreen("error", {}),
                             Speak("I couldn't get a clear enough reading. Let's try again later.")]
                 self._enter(ScanState.DONE, now)
-                return [ShowScreen("result_card", {"vitals": poll.vitals.to_dict()}),
+                return [ShowScreen("processing_results", {}),
+                        Speak("Scan complete. Please wait while I prepare your results."),
+                        ShowScreen("result_card", {"vitals": poll.vitals.to_dict()}),
                         Speak(self._summary_speech(poll.vitals)),
                         PublishResults({"vitals": poll.vitals.to_dict(),
                                         "quality": {"average_signal_quality": poll.signal_quality,
@@ -84,7 +89,11 @@ class ScanOrchestrator:
                 self._enter(ScanState.FAILED, now)
                 return [EngineCmd("stop"), ShowScreen("error", {}),
                         Speak("I couldn't complete the reading. Let's try again later.")]
-            return [ShowScreen("measuring", {"progress": poll.progress})]
+            effects: List[Effect] = [ShowScreen("measuring", {"progress": poll.progress})]
+            if self._last_hold_prompt_at is None or now - self._last_hold_prompt_at >= 3.0:
+                self._last_hold_prompt_at = now
+                effects.append(Speak("Hold your position until scanning is complete."))
+            return effects
 
         return []
 

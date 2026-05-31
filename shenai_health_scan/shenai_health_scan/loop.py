@@ -1,7 +1,9 @@
 from __future__ import annotations
 import threading, time, datetime
 from typing import Optional
-from .core.types import EngineCmd, Speak, ShowScreen, PublishResults
+from .core.types import (
+    EngineCmd, EnginePoll, Speak, ShowScreen, PublishResults, ScanState,
+)
 
 
 class MeasurementLoop:
@@ -16,6 +18,7 @@ class MeasurementLoop:
         self.log = logger
         self._thread: Optional[threading.Thread] = None
         self._stop = threading.Event()
+        self._last_submitted_ts: Optional[int] = None
 
     def start(self):
         self.camera.start()
@@ -29,13 +32,21 @@ class MeasurementLoop:
             time.sleep(self.period)
 
     def tick_once(self, now: float):
+        if self.orch.state in (ScanState.IDLE, ScanState.DONE, ScanState.FAILED):
+            effects = self.orch.on_tick(EnginePoll(face_present=False), now)
+            for eff in effects:
+                self._dispatch(eff)
+            return
+
         frame = self.camera.get_latest()
         if frame is not None:
             data, w, h, stride, ts = frame
-            try:
-                self.engine.submit(data, w, h, stride, ts)
-            except Exception as e:
-                if self.log: self.log(f"submit_frame failed: {e}")
+            if ts != self._last_submitted_ts:
+                try:
+                    self.engine.submit(data, w, h, stride, ts)
+                    self._last_submitted_ts = ts
+                except Exception as e:
+                    if self.log: self.log(f"submit_frame failed: {e}")
         poll = self.engine.poll()
         for eff in self.orch.on_tick(poll, now):
             self._dispatch(eff)

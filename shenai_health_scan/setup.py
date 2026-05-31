@@ -25,6 +25,7 @@ setup(
         "console_scripts": [
             "scan_node = shenai_health_scan.node:main",
             "scan_demo = shenai_health_scan.demo:main",
+            "generate_scan_videos = shenai_health_scan.generate_videos:main",
         ],
     },
 )

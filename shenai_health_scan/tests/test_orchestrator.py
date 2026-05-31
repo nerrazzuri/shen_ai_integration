@@ -39,6 +39,34 @@ def test_acquire_face_timeout_fails():
     assert o.state == ScanState.FAILED
     assert any(isinstance(e, Speak) for e in effects)
 
+def test_acquire_face_prompts_user_to_move_back_when_too_close():
+    o = ScanOrchestrator()
+    o.request_scan(); o.on_tick(mk(face_present=False), now=0.0)
+
+    effects = o.on_tick(mk(face_hint=FaceHint.TOO_CLOSE), now=1.0)
+
+    assert any(isinstance(e, Speak) and "move back" in e.text.lower()
+               for e in effects)
+
+def test_measuring_prompts_to_hold_position_every_three_seconds():
+    o = ScanOrchestrator()
+    o.request_scan(); o.on_tick(mk(), now=0.0)
+    o.on_tick(mk(is_ready=True), now=1.0)  # -> MEASURING
+
+    effects = o.on_tick(mk(progress=0.2), now=3.0)
+    assert not any(isinstance(e, Speak) for e in effects)
+
+    effects = o.on_tick(mk(progress=0.3), now=4.1)
+    assert any(isinstance(e, Speak) and "hold" in e.text.lower()
+               for e in effects)
+
+    effects = o.on_tick(mk(progress=0.4), now=5.0)
+    assert not any(isinstance(e, Speak) for e in effects)
+
+    effects = o.on_tick(mk(progress=0.5), now=7.2)
+    assert any(isinstance(e, Speak) and "hold" in e.text.lower()
+               for e in effects)
+
 def test_measuring_finishes_and_publishes():
     o = ScanOrchestrator()
     o.request_scan(); o.on_tick(mk(), now=0.0)
@@ -46,6 +74,12 @@ def test_measuring_finishes_and_publishes():
     v = Vitals(heart_rate_bpm=72, systolic_bp_mmhg=120, diastolic_bp_mmhg=80)
     effects = o.on_tick(mk(finished=True, vitals=v), now=2.0)
     assert o.state == ScanState.DONE
+    assert isinstance(effects[0], ShowScreen)
+    assert effects[0].view == "processing_results"
+    assert any(isinstance(e, Speak) and "scan complete" in e.text.lower()
+               for e in effects)
+    assert any(isinstance(e, Speak) and "wait" in e.text.lower()
+               for e in effects)
     assert any(isinstance(e, ShowScreen) and e.view == "result_card" for e in effects)
     assert any(isinstance(e, PublishResults) for e in effects)
 

@@ -47,6 +47,8 @@ class ShenAiEngine:
             return FaceHint.NO_FACE
         if face_state == FS.TOO_FAR:
             return FaceHint.TOO_FAR
+        if face_state == FS.TOO_CLOSE:
+            return FaceHint.TOO_CLOSE
         if face_state in (FS.NOT_CENTERED, FS.TURNED_AWAY):
             return FaceHint.OFF_CENTER
         if is_ready:
@@ -69,6 +71,24 @@ class ShenAiEngine:
 
     def trace_id(self) -> str:
         return self._sdk.get_trace_id()
+
+    def debug_status(self) -> dict:
+        bbox = self._sdk.get_face_bbox()
+        pose = self._sdk.get_face_pose()
+        return {
+            "face_state": self._sdk.get_face_state().name,
+            "measurement_state": self._sdk.get_measurement_state().name,
+            "ready": self._sdk.is_ready_to_start_measurement(),
+            "bbox": None if bbox is None else {
+                "x": bbox.x, "y": bbox.y,
+                "width": bbox.width, "height": bbox.height,
+            },
+            "pose": None if pose is None else {
+                "yaw": pose.rotation.yaw,
+                "pitch": pose.rotation.pitch,
+                "roll": pose.rotation.roll,
+            },
+        }
 
     def close(self):
         self._sdk.close()

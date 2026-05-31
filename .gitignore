@@ -16,6 +16,7 @@ shenai_api_key*
 # Results / dead-letter output
 dead_letter/
 images/
+videos/
 
 # Python
 __pycache__/

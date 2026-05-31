@@ -38,5 +38,8 @@ class ScanApp:
         for t in self.triggers:
             t.stop()
         self.loop.stop()
+        close = getattr(self.loop.engine, "close", None)
+        if close is not None:
+            close()
         self.publisher.flush(timeout=3.0)
         self.publisher.stop()

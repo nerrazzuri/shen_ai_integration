@@ -13,6 +13,7 @@ def main():
     ap = argparse.ArgumentParser(description="Off-robot Shen.AI scan demo")
     ap.add_argument("--source", default="0", help="webcam index or video file path")
     ap.add_argument("--real", action="store_true", help="use real Shen.AI x64 SDK engine")
+    ap.add_argument("--debug", action="store_true", help="print Shen.AI face diagnostics")
     ap.add_argument("--api-key", default="")
     args = ap.parse_args()
 
@@ -26,6 +27,10 @@ def main():
         engine = MockEngine()
 
     cam = FakeCamera(source=source, fps=30.0)
+    if args.debug:
+        from .engine.debug import DebugEngineProxy
+        engine = DebugEngineProxy(engine, camera_fps=lambda: cam.measured_fps)
+
     trig = ManualTrigger()
     app = ScanApp(cfg, camera=cam, engine=engine, robot_io=ConsoleIO(), triggers=[trig])
     app.start()

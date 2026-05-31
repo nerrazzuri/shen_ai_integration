@@ -10,6 +10,8 @@ shenai_health_scan:
     acquire_face_timeout: 20.0
     max_measure_seconds: 75.0
     min_signal_quality: 0.0
+    screen_static_video_dir: "" # set to PC3-local dir containing progress_*.mp4
+    screen_result_video_dir: "" # shared dir writable by PC2 and readable by PC3
     publisher.endpoint: ""      # third-party app URL
     publisher.auth_header: ""
     publisher.timeout_sec: 5.0
