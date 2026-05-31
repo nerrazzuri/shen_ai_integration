@@ -62,7 +62,7 @@ class MeasurementLoop:
         payload = dict(payload)
         payload["measurement_id"] = mid
         payload["trace_id"] = tid
-        payload["timestamp"] = datetime.datetime.utcnow().isoformat() + "Z"
+        payload["timestamp"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
         return payload
 
     def stop(self):

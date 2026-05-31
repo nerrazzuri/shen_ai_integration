@@ -1,6 +1,6 @@
 # robot_io/ros_io.py
 from __future__ import annotations
-import os, time, tempfile
+import os, time, uuid
 from typing import Dict, Any, Optional
 from .cards import render_result_card
 
@@ -34,7 +34,7 @@ class RosIO:
         try:
             if view == "result_card" and "vitals" in data:
                 png = render_result_card(data["vitals"])
-                path = os.path.join(self._card_dir, f"card_{int(time.time()*1000)}.png")
+                path = os.path.join(self._card_dir, f"card_{int(time.time()*1000)}_{uuid.uuid4().hex[:6]}.png")
                 with open(path, "wb") as f:
                     f.write(png)
                 self._play_video(path, mode=1, priority=5)

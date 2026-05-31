@@ -49,8 +49,24 @@ def test_measuring_finishes_and_publishes():
     assert any(isinstance(e, ShowScreen) and e.view == "result_card" for e in effects)
     assert any(isinstance(e, PublishResults) for e in effects)
 
-def test_measuring_bad_signal_fails():
+def test_measuring_engine_failure_fails():
     o = ScanOrchestrator(max_measure_seconds=60, min_signal_quality=0.3)
     o.request_scan(); o.on_tick(mk(), now=0.0); o.on_tick(mk(is_ready=True), now=1.0)
     effects = o.on_tick(mk(failed=True), now=3.0)
     assert o.state == ScanState.FAILED
+
+def test_measuring_low_signal_quality_fails():
+    o = ScanOrchestrator(min_signal_quality=0.5)
+    o.request_scan(); o.on_tick(mk(), now=0.0); o.on_tick(mk(is_ready=True), now=1.0)
+    v = Vitals(heart_rate_bpm=72)
+    effects = o.on_tick(mk(finished=True, vitals=v, signal_quality=0.2), now=2.0)
+    assert o.state == ScanState.FAILED
+    assert not any(isinstance(e, PublishResults) for e in effects)
+
+def test_measuring_finishes_when_quality_meets_threshold():
+    o = ScanOrchestrator(min_signal_quality=0.5)
+    o.request_scan(); o.on_tick(mk(), now=0.0); o.on_tick(mk(is_ready=True), now=1.0)
+    v = Vitals(heart_rate_bpm=72)
+    effects = o.on_tick(mk(finished=True, vitals=v, signal_quality=0.9), now=2.0)
+    assert o.state == ScanState.DONE
+    assert any(isinstance(e, PublishResults) for e in effects)

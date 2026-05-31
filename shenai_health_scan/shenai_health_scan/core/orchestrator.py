@@ -70,6 +70,10 @@ class ScanOrchestrator:
 
         if self.state == ScanState.MEASURING:
             if poll.finished and poll.vitals is not None:
+                if poll.signal_quality < self._min_quality:
+                    self._enter(ScanState.FAILED, now)
+                    return [EngineCmd("stop"), ShowScreen("error", {}),
+                            Speak("I couldn't get a clear enough reading. Let's try again later.")]
                 self._enter(ScanState.DONE, now)
                 return [ShowScreen("result_card", {"vitals": poll.vitals.to_dict()}),
                         Speak(self._summary_speech(poll.vitals)),
