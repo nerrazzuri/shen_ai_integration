@@ -1,0 +1,36 @@
+# Third-party vendor SDK packages (obtained separately, not source-controlled)
+*.zip
+_extracted/
+
+# Vendor native/wasm binaries
+*.so
+*.wasm
+shenai_sdk/lib/
+
+# Secrets / local config
+.env
+*.key
+shenai_api_key*
+**/secrets.*
+
+# Results / dead-letter output
+dead_letter/
+images/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# ROS 2 build artifacts
+build/
+install/
+log/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
