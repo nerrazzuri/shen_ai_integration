@@ -26,7 +26,7 @@ class PublisherConfig:
 class ScanConfig:
     api_key: str = ""
     offline: bool = False
-    measurement_preset: str = "ONE_MINUTE_HR_HRV_BR_BP"
+    measurement_preset: str = "ONE_MINUTE_ALL_METRICS"
     precision_mode: str = "RELAXED"
     camera_topic: str = "/aima/hal/sensor/rgbd_head_front/rgb_image"
     submit_fps: int = 30
@@ -42,7 +42,7 @@ class ScanConfig:
         return cls(
             api_key=d.get("api_key", ""),
             offline=bool(d.get("offline", False)),
-            measurement_preset=d.get("measurement_preset", "ONE_MINUTE_HR_HRV_BR_BP"),
+            measurement_preset=d.get("measurement_preset", "ONE_MINUTE_ALL_METRICS"),
             precision_mode=d.get("precision_mode", "RELAXED"),
             camera_topic=d.get("camera_topic", "/aima/hal/sensor/rgbd_head_front/rgb_image"),
             submit_fps=int(d.get("submit_fps", 30)),
