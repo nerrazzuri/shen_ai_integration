@@ -5,9 +5,10 @@ humanoid robot, using the robot's own camera. The robot runs a guided scan
 (TTS + face screen), shows **vitals on its face screen**, and forwards the
 **full result payload to a third-party app via an API**.
 
-> **Status:** design phase. The approved design lives in
-> [`docs/superpowers/specs/2026-05-31-shenai-x2-integration-design.md`](docs/superpowers/specs/2026-05-31-shenai-x2-integration-design.md).
-> No implementation code yet.
+> **Status:** design + plan complete; implementation not started.
+> - Design: [`docs/superpowers/specs/2026-05-31-shenai-x2-integration-design.md`](docs/superpowers/specs/2026-05-31-shenai-x2-integration-design.md)
+> - Implementation plan (TDD, task-by-task): [`docs/superpowers/plans/2026-05-31-shenai-x2-mvp.md`](docs/superpowers/plans/2026-05-31-shenai-x2-mvp.md)
+> - **Resuming on another machine? Read [`CONTINUATION.md`](CONTINUATION.md) first.**
 
 ## How it works (summary)
 
@@ -47,8 +48,14 @@ README.md
 .gitignore
 ```
 
-## Requirements (target runtime)
+## Requirements
 
-- AgiBot X2 PC2 dev unit (Jetson Orin NX, arm64, Ubuntu + ROS 2)
-- Python 3.8+, `rclpy`, `cv_bridge`, OpenCV
-- Shen.AI arm64 Python SDK + a valid Shen.AI API key (online licensing)
+**Target runtime (robot PC2):** Jetson Orin NX, arm64, ROS 2 Humble; Python 3.8+,
+`rclpy`, `cv_bridge`, OpenCV; Shen.AI **arm64** Python SDK + a valid API key
+(online licensing).
+
+**Dev workstation (Ubuntu 22.04, x86_64):** ROS 2 Humble; `pytest`, `requests`,
+`numpy`, `opencv`; Shen.AI **x64** headless Python SDK (the arm64 `.so` will not
+load on x86_64). See [`CONTINUATION.md`](CONTINUATION.md) for the full setup
+checklist. The pure core + an off-robot demo (`scan_demo`, webcam) run here
+without the robot.
