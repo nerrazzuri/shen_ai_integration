@@ -32,6 +32,9 @@ log/
 # Git worktrees
 .worktrees/
 
+# Extracted vendor SDK for local dev (x64 Shen.AI build)
+_sdk_x64/
+
 # OS / editor
 .DS_Store
 Thumbs.db
