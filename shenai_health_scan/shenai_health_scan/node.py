@@ -22,7 +22,7 @@ class ShenAiHealthScanNode(Node):
         super().__init__("shenai_health_scan")
         cfg = self._load_config()
         engine = ShenAiEngine(cfg)
-        camera = RosCamera(self, cfg.camera_topic)
+        camera = RosCamera(self, cfg.camera_topic, jpeg_scale=cfg.camera_jpeg_scale)
         robot_io = RosIO(
             self,
             static_video_dir=cfg.screen_static_video_dir,
@@ -41,6 +41,7 @@ class ShenAiHealthScanNode(Node):
             ("measurement_preset", "ONE_MINUTE_ALL_METRICS"),
             ("precision_mode", "RELAXED"),
             ("camera_topic", "/aima/hal/sensor/rgbd_head_front/rgb_image"),
+            ("camera_jpeg_scale", 2),
             ("submit_fps", 30),
             ("enabled_triggers", ["service"]),
             ("acquire_face_timeout", 20.0), ("max_measure_seconds", 75.0),
@@ -56,7 +57,8 @@ class ShenAiHealthScanNode(Node):
             "api_key": g("api_key"), "offline": g("offline"),
             "measurement_preset": g("measurement_preset"),
             "precision_mode": g("precision_mode"),
-            "camera_topic": g("camera_topic"), "submit_fps": g("submit_fps"),
+            "camera_topic": g("camera_topic"), "camera_jpeg_scale": g("camera_jpeg_scale"),
+            "submit_fps": g("submit_fps"),
             "enabled_triggers": list(g("enabled_triggers")),
             "acquire_face_timeout": g("acquire_face_timeout"),
             "max_measure_seconds": g("max_measure_seconds"),

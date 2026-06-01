@@ -29,6 +29,7 @@ class ScanConfig:
     measurement_preset: str = "ONE_MINUTE_ALL_METRICS"
     precision_mode: str = "RELAXED"
     camera_topic: str = "/aima/hal/sensor/rgbd_head_front/rgb_image"
+    camera_jpeg_scale: int = 2
     submit_fps: int = 30
     enabled_triggers: List[str] = field(default_factory=lambda: ["service"])
     acquire_face_timeout: float = 20.0
@@ -47,6 +48,7 @@ class ScanConfig:
             measurement_preset=d.get("measurement_preset", "ONE_MINUTE_ALL_METRICS"),
             precision_mode=d.get("precision_mode", "RELAXED"),
             camera_topic=d.get("camera_topic", "/aima/hal/sensor/rgbd_head_front/rgb_image"),
+            camera_jpeg_scale=int(d.get("camera_jpeg_scale", 2)),
             submit_fps=int(d.get("submit_fps", 30)),
             enabled_triggers=list(d.get("enabled_triggers", ["service"])),
             acquire_face_timeout=float(d.get("acquire_face_timeout", 20.0)),

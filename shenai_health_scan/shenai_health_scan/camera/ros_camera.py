@@ -9,7 +9,7 @@ class RosCamera:
     Subscribes to a raw sensor_msgs/Image, or a sensor_msgs/CompressedImage when
     the topic ends with "/compressed" (the X2 publishes the full-rate stream there).
     """
-    def __init__(self, node, topic: str):
+    def __init__(self, node, topic: str, jpeg_scale: int = 2):
         from sensor_msgs.msg import Image, CompressedImage
         from cv_bridge import CvBridge
         from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
@@ -20,9 +20,24 @@ class RosCamera:
         self._latest: Optional[Tuple[bytes, int, int, int, int]] = None
         self._count = 0
         self._t0 = time.time()
+        self._jpeg_scale = max(1, jpeg_scale)
+        self._compressed = topic.endswith("/compressed")
+        # The X2 head camera streams a 2688x1944 JPEG at 30 Hz; cv2's JPEG decode
+        # caps the Jetson at ~18-22 fps (below rPPG's >=30 fps need). TurboJPEG
+        # decodes ~3x faster and can scale down during decode -> real 30 fps.
+        self._tj = None
+        if self._compressed:
+            try:
+                from turbojpeg import TurboJPEG
+                self._tj = TurboJPEG()
+                node.get_logger().info(
+                    f"RosCamera using TurboJPEG decode at 1/{self._jpeg_scale}")
+            except Exception as e:
+                node.get_logger().warn(
+                    f"TurboJPEG unavailable ({e}); falling back to cv_bridge JPEG decode")
         qos = QoSProfile(reliability=QoSReliabilityPolicy.BEST_EFFORT,
                          history=QoSHistoryPolicy.KEEP_LAST, depth=5)
-        if topic.endswith("/compressed"):
+        if self._compressed:
             self._sub = node.create_subscription(CompressedImage, topic, self._cb_compressed, qos)
         else:
             self._sub = node.create_subscription(Image, topic, self._cb, qos)
@@ -44,8 +59,15 @@ class RosCamera:
         self._store(img)
 
     def _cb_compressed(self, msg):
-        # cv_bridge decodes JPEG/PNG and returns BGR directly with desired_encoding="bgr8"
-        img = self._bridge.compressed_imgmsg_to_cv2(msg, desired_encoding="bgr8")
+        if self._tj is not None:
+            # TurboJPEG decodes (and downscales) directly to BGR
+            img = self._tj.decode(bytes(msg.data), scaling_factor=(1, self._jpeg_scale))
+        else:
+            img = self._bridge.compressed_imgmsg_to_cv2(msg, desired_encoding="bgr8")
+            if self._jpeg_scale > 1:
+                h, w = img.shape[:2]
+                img = self._cv2.resize(img, (w // self._jpeg_scale, h // self._jpeg_scale),
+                                       interpolation=self._cv2.INTER_AREA)
         self._store(img)
 
     def start(self): pass

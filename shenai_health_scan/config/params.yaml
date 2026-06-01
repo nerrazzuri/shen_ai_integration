@@ -5,6 +5,7 @@ shenai_health_scan:
     measurement_preset: "ONE_MINUTE_ALL_METRICS"
     precision_mode: "RELAXED"
     camera_topic: "/aima/hal/sensor/rgbd_head_front/rgb_image"
+    camera_jpeg_scale: 2        # TurboJPEG decode downscale for /compressed topics (1=full, 2=half, 4=quarter)
     submit_fps: 30
     enabled_triggers: ["service", "touch"]
     acquire_face_timeout: 20.0
