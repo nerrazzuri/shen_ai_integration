@@ -8,22 +8,37 @@ from ..core.config import ScanConfig
 class ShenAiEngine:
     """Wraps the Shen.AI headless Python SDK. The only owner of the SDK context."""
     def __init__(self, config: ScanConfig):
+        import uuid
         from shenai_sdk import (
             ShenaiSDK, MeasurementPreset, PrecisionMode, MeasurementState, FaceState,
         )
         self._MeasurementState = MeasurementState
         self._FaceState = FaceState
-        self._sdk = ShenaiSDK(api_key=config.api_key, offline=config.offline)
+        # A valid user_id (UUID) is required for the SDK's measurement telemetry;
+        # without it the engine logs "Report measurement started failed: invalid UUID length: 0".
+        self._sdk = ShenaiSDK(api_key=config.api_key, user_id=str(uuid.uuid4()),
+                              offline=config.offline)
         self._sdk.precision_mode = getattr(PrecisionMode, config.precision_mode)
         self._sdk.measurement_preset = getattr(MeasurementPreset, config.measurement_preset)
+        # Shen.AI indexes frames by timestamp and expects a uniform >= 30 fps cadence.
+        # The camera arrives with jitter, which leaves gaps/collisions in the SDK's
+        # frame ids -> "texture jitter buffer overflow ... skipping ahead" and a dead
+        # signal. Submit with a uniform synthetic cadence so frame ids stay contiguous.
+        self._frame_period_ns = int(1_000_000_000 / max(1, config.submit_fps))
+        self._frame_idx = 0
 
-    def begin_session(self): self._sdk.reset_measurement_session()
+    def begin_session(self):
+        self._frame_idx = 0
+        self._sdk.reset_measurement_session()
     def start(self): self._sdk.start_measurement()
     def stop(self): self._sdk.stop_measurement()
 
     def submit(self, data, width, height, stride, ts_ns):
-        self._sdk.submit_frame(data, width=width, height=height,
-                               stride_bytes=stride, timestamp_ns=ts_ns)
+        # ts_ns (real camera arrival time) is ignored on purpose: the SDK wants
+        # uniform spacing, so we clock frames at the configured submit_fps.
+        self._sdk.submit_frame(data, width=width, height=height, stride_bytes=stride,
+                               timestamp_ns=self._frame_idx * self._frame_period_ns)
+        self._frame_idx += 1
 
     def poll(self) -> EnginePoll:
         face_state = self._sdk.get_face_state()
